@@ -36,11 +36,11 @@ function createAsset(filename) {
     babelTraverse(fileAST, {
         // 因為是要取得 file 之間的 dependency 路徑, 所以 node types 設定為 'ImportDeclaration'
         // 這樣當 babel 轉換到 file 裡的 import 關鍵字時, 就會走到這個 ImportDeclaration function 裡
-        ImportDeclaration: (node) => {
+        ImportDeclaration: (path) => {
             // 歷遍每個有 ImportDeclaration function 的 node
-            // 從 node.source.value 取出 import path 的 string 並且 push 到 dependencies array 中
+            // 從 path.node.source.value 取出 import path 的 string 並且 push 到 dependencies array 中
             // 例如: 當前 file 有 import message from './message.js'; 會取出 './message.js'
-            dependencies.push(node.source.value);
+            dependencies.push(path.node.source.value);
         }
     });
 
@@ -49,9 +49,9 @@ function createAsset(filename) {
 
     // transformFromAstSync 用來把 ES6 轉成 ES5 (像是 polyfill 在做的事情一樣)
     // 他接受三個參數
-    // 參數1:
+    // 參數1: 要被轉換的 AST
     // 參數2:
-    // 參數3:
+    // 參數3: babel option 傳入你想要調用的 babel 轉換包
     const {code} = babel.transformFromAstSync(fileAST, null, {
         presets: ['@babel/preset-env']
     });
@@ -66,6 +66,9 @@ function createAsset(filename) {
 
 function createGraph(entry) {
     const mainAsset = createAsset(entry);
+
+    console.log('====== main asset ======');
+    console.log(mainAsset);
 }
 
 createGraph('./src/components/entry.js');
