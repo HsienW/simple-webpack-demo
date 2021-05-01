@@ -7,13 +7,13 @@ const babel = require('@babel/core');
 let id = 0;
 
 // createAsset 用來取得 File Info & js 檔之間的 dependency
-function createAsset(filename) {
+function createAsset(filePath) {
 
     // 用來存後面解析出來當前 file import 了哪些的路徑
     const dependencies = [];
 
     // readFileSync 會回傳一個 string 說明當前 file 全部的 dependency (import) 路徑 & code
-    const fileInfo = fs.readFileSync(filename, 'utf-8');
+    const fileInfo = fs.readFileSync(filePath, 'utf-8');
     console.log('====== fileInfo ======');
     console.log(fileInfo);
     console.log(typeof fileInfo === 'string');
@@ -50,25 +50,66 @@ function createAsset(filename) {
     // transformFromAstSync 用來把 ES6 轉成 ES5 (像是 polyfill 在做的事情一樣)
     // 他接受三個參數
     // 參數1: 要被轉換的 AST
-    // 參數2:
+    // 參數2: 要被轉換的 ES6 以上的 source code (這裡我們已經有 AST 了, 所以就不用特別再傳 source code 進去)
     // 參數3: babel option 傳入你想要調用的 babel 轉換包
     const {code} = babel.transformFromAstSync(fileAST, null, {
         presets: ['@babel/preset-env']
     });
 
+    // 最後回傳一個大 obj 帶有以下4點
+    // 1. module id
+    // 2. 檔案路徑
+    // 3. dependency array
+    // 4. 轉換後的 ES5 code
     return {
         id,
-        filename,
+        filePath,
         dependencies,
         code
     };
 }
 
+// 從 entry point 開始產生 dependency 圖, 使用廣度優先 (BFS)
 function createGraph(entry) {
     const mainAsset = createAsset(entry);
-
     console.log('====== main asset ======');
     console.log(mainAsset);
+
+    // 廣度優先一般都使用佇列 (queue) & for 迴圈來處理, 第一個一定是從 entry.js 回傳的開始
+    const queue = [mainAsset];
+
+    for (const asset of queue) {
+
+        // path.dirname 給它一段路徑(string) 會回傳檔案前段的路徑
+        // 例如: ./src/components/entry.js 會回傳 ./src/components
+        const dirname = path.dirname(asset.filePath);
+
+        console.log('====== path ======');
+        console.log(dirname);
+
+        // 新增一個屬性 childDependencyMap 用來存放 child 相關的 data
+        // 例如: {"./message.js" : 1}
+        asset.childDependencyMap = {};
+
+        asset.dependencies.forEach(childPath => {
+            // path.join 接受一個 string array 會把它全部串起來回傳成一段路徑 string
+            const childFullPath = path.join(dirname, childPath);
+
+            // 使用 createAsset 傳入 childFullPath 用以取得 child 的 dependency object
+            const childAsset = createAsset(childFullPath);
+
+            //存入 dependency map 路徑 & id 對應
+            asset.childDependencyMap[childFullPath] = childAsset.id;
+
+            // childAsset 也傳入 queue 做廣度優先 (BFS) 的歷遍
+            queue.push(childAsset);
+        });
+    }
+
+    console.log('====== queue ======');
+    console.log(queue);
+
+    return queue;
 }
 
 createGraph('./src/components/entry.js');
