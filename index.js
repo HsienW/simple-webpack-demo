@@ -130,7 +130,30 @@ function bundle(graph) {
     console.log('====== modules ======');
     console.log(modules);
 
-    return null;
+    // require, module, exports 不能在瀏覽器裡用, 所以我們自己模擬一下這三個 function (注意這裡都使用 string 不然瀏覽器會 error)
+    // result 用來存放 IIFE 並傳入我們的 modules
+    const result = `
+    (function(modules){
+      
+      // require 傳入一個 id (string) 對應 modules 中我們要取出的 model
+      function require(id){
+      
+        // 取出當前這個 model 的 dependency map & 要執行的 code
+        const {code, childDependencyMap} = modules[id];
+        
+        function localRequire(itemPath){
+          return require(childDependencyMap[itemPath]);
+        }
+        
+        const module = {exports:{}};
+        code(localRequire,module,module.exports);
+        return module.exports;
+      }
+      
+      require(0);
+    })({${modules}})
+  `;
+    return result;
 }
 
 const graph = createGraph('./src/components/entry.js');
