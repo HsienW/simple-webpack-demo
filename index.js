@@ -57,7 +57,7 @@ function createAsset(filePath) {
     });
 
     // 最後回傳一個大 obj 帶有以下4點
-    // 1. module id
+    // 1. model id
     // 2. 檔案路徑
     // 3. dependency array
     // 4. 轉換後的 ES5 code
@@ -98,7 +98,7 @@ function createGraph(entry) {
             // 使用 createAsset 傳入 childFullPath 用以取得 child 的 dependency object
             const childAsset = createAsset(childFullPath);
 
-            //存入 dependency map 路徑 & id 對應
+            // 存入 dependency map 路徑 & id 對應
             asset.childDependencyMap[childFullPath] = childAsset.id;
 
             // childAsset 也傳入 queue 做廣度優先 (BFS) 的歷遍
@@ -112,4 +112,26 @@ function createGraph(entry) {
     return queue;
 }
 
-createGraph('./src/components/entry.js');
+// bundle 用來透過 Graph 圖去產生對應可以 run 的 code (webpack 是產出瀏覽器可以用的)
+// 到這一步目前都還是在操作 string 最後回傳的才是可以執行的 code
+function bundle(graph) {
+
+    // 用來存後面 graph 解析出來的 code (string)
+    let modules = '';
+
+    // 歷遍 graph 把每個要轉出 bundle 的 model 透過 id & string 先把 function scope 等等的 code 存起來
+    graph.forEach(model => {
+        modules += `
+            ${model.id}:[function (require, module, exports) {${model.code}},
+            ${JSON.stringify(model.childDependencyMap)},],
+        `;
+    });
+
+    console.log('====== modules ======');
+    console.log(modules);
+
+    return null;
+}
+
+const graph = createGraph('./src/components/entry.js');
+const result = bundle(graph);
