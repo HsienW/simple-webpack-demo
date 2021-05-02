@@ -138,18 +138,24 @@ function bundle(graph) {
       // require 傳入一個 id (string) 對應 modules 中我們要取出的 model
       function require(id){
       
-        // 取出當前這個 model 的 dependency map & 要執行的 code
-        const {code, childDependencyMap} = modules[id];
+        // 取出當前這個 model 的 dependency map & 要執行的 handler function
+        const {handler, childDependencyMap} = modules[id];
         
-        function localRequire(itemPath){
-          return require(childDependencyMap[itemPath]);
+        // scope 內準備一個 mappingRequire 處理從 childDependencyMap 中拿路徑去 mapping 出對應的 model
+        function mappingRequire(path){
+          return require(childDependencyMap[path]);
         }
         
+        // 先預設 exports 出去的是一個空的 object
         const module = {exports:{}};
-        code(localRequire,module,module.exports);
+        
+        // call mappingRequire 開始尋找 mapping
+        handler(mappingRequire, module, module.exports);
+        
         return module.exports;
       }
       
+      // 第一步開始先 call entry 給 0 當 id
       require(0);
     })({${modules}})
   `;
