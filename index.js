@@ -139,7 +139,7 @@ function bundle(graph) {
       function require(id){
       
         // 取出當前這個 model 的 dependency map & 要執行的 handler function
-        const {handler, childDependencyMap} = modules[id];
+        const [handler, childDependencyMap] = modules[id];
         
         // scope 內準備一個 mappingRequire 處理從 childDependencyMap 中拿路徑去 mapping 出對應的 model
         function mappingRequire(path){
@@ -164,3 +164,10 @@ function bundle(graph) {
 
 const graph = createGraph('./src/components/entry.js');
 const result = bundle(graph);
+
+// writeFileSync 用來把 data 同步寫入並在對應路徑下產生 file , 如果該 file 已經存在, 則整個替換它的 content
+// 他接受三個參數
+// 參數1: 對應要產生的路徑 (string)
+// 參數2: 要寫入 file 的 code (string)
+// 參數3: 用於指定將影響輸出的可選參數 (這邊不用特別設, 讓它預設 utf8)
+fs.writeFileSync('./bundle.js', result);
