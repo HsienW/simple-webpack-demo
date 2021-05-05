@@ -62,7 +62,7 @@ function createAsset(filePath) {
     // 3. dependency array
     // 4. 轉換後的 ES5 code
     return {
-        id,
+        astId,
         filePath,
         dependencies,
         code
@@ -99,7 +99,7 @@ function createGraph(entry) {
             const childAsset = createAsset(childFullPath);
 
             // 存入 dependency map 路徑 & id 對應
-            asset.childDependencyMap[childFullPath] = childAsset.id;
+            asset.childDependencyMap[childPath] = childAsset.astId;
 
             // childAsset 也傳入 queue 做廣度優先 (BFS) 的歷遍
             queue.push(childAsset);
@@ -122,8 +122,10 @@ function bundle(graph) {
     // 歷遍 graph 把每個要轉出 bundle 的 model 透過 id & string 先把 function scope 等等的 code 存起來
     graph.forEach(model => {
         modules += `
-            ${model.id}:[function (require, module, exports) {${model.code}},
-            ${JSON.stringify(model.childDependencyMap)},],
+            ${model.astId}: {
+                handler: function (require, module, exports) {${model.code}},
+                dependencyMap: ${JSON.stringify(model.childDependencyMap)},
+            },
         `;
     });
 
@@ -134,27 +136,27 @@ function bundle(graph) {
     // result 用來存放 IIFE 並傳入我們的 modules
     const result = `
     (function(modules){
-      
+
       // require 傳入一個 id (string) 對應 modules 中我們要取出的 model
       function require(id){
-      
+
         // 取出當前這個 model 的 dependency map & 要執行的 handler function
-        const [handler, childDependencyMap] = modules[id];
-        
+        const {handler, childDependencyMap} = modules[id];
+
         // scope 內準備一個 mappingRequire 處理從 childDependencyMap 中拿路徑去 mapping 出對應的 model
         function mappingRequire(path){
           return require(childDependencyMap[path]);
         }
-        
+
         // 先預設 exports 出去的是一個空的 object
         const module = {exports:{}};
-        
+
         // call mappingRequire 開始尋找 mapping
         handler(mappingRequire, module, module.exports);
-        
+
         return module.exports;
       }
-      
+
       // 第一步開始先 call entry 給 0 當 id
       require(0);
     })({${modules}})
