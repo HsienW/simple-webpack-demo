@@ -2,9 +2,9 @@
 
 // 本質上來說 Webpack 就是一個 module builder
 // 它的工作流程可以大概歸為三個步驟
-// step-1 把每個 file 的 code 轉換成 ES5 (瀏覽器才能看懂), 並且生產該 file 的 dependency AST
-// step-2 透過第一步的 AST 產生 file 之間的 dependency 圖 (使用遞迴)
-// step-3 透過第二步的 dependency 圖 build 出來, 壓成一個 pure js file
+// step1 把每個 file 的 code 轉換成 ES5 (瀏覽器才能看懂), 並且生產該 file 的 dependency AST
+// step2 透過第一步的 AST 產生 file 之間的 dependency 圖 (使用遞迴)
+// step3 透過第二步的 dependency 圖 build 出來, 壓成一個 pure js file
 
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +14,7 @@ const babel = require('@babel/core');
 
 let id = 0;
 
-// step-1
+// step1
 // createAsset 用來取得 File Info & js 檔之間的 dependency
 function createAsset(filePath) {
 
@@ -32,6 +32,7 @@ function createAsset(filePath) {
     // 可以簡單理解為會把 js file code 的每個字(包括關鍵字) 都抽象轉換
     // 最後彙整成一個說明細節的大 object, 而 object 每個階層又叫做 node
     const fileAST = babelParser.parse(fileInfo, {
+        // babel 官方規鑰要加這個參數, 否則無法識別 ES Module
         sourceType: 'module'
     });
 
@@ -78,7 +79,7 @@ function createAsset(filePath) {
     };
 }
 
-// step-2
+// step2
 // 從 entry point 開始產生 dependency 圖, 使用廣度優先 (BFS)
 function createGraph(entry) {
     const mainAsset = createAsset(entry);
@@ -122,7 +123,7 @@ function createGraph(entry) {
     return queue;
 }
 
-// step-3
+// step3
 // bundle 用來透過 Graph 圖去產生對應可以 run 的 code (webpack 是產出瀏覽器可以用的)
 // 到這一步目前都還是在操作 string 最後回傳的才是可以執行的 code
 function bundle(graph) {
