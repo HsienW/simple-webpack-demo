@@ -141,11 +141,11 @@ function bundle(graph) {
       function require(id){
 
         // 取出當前這個 model 的 dependency map & 要執行的 handler function
-        const {handler, childDependencyMap} = modules[id];
+        const {handler, dependencyMap} = modules[id];
 
         // scope 內準備一個 mappingRequire 處理從 childDependencyMap 中拿路徑去 mapping 出對應的 model
-        function mappingRequire(path){
-          return require(childDependencyMap[path]);
+        function mappingRequire(path) {
+          return require(dependencyMap[path]);
         }
 
         // 先預設 exports 出去的是一個空的 object
