@@ -32,7 +32,7 @@ function createAsset(filePath) {
     // 可以簡單理解為會把 js file code 的每個字(包括關鍵字) 都抽象轉換
     // 最後彙整成一個說明細節的大 object, 而 object 每個階層又叫做 node
     const fileAST = babelParser.parse(fileInfo, {
-        // babel 官方規鑰要加這個參數, 否則無法識別 ES Module
+        // babel 官方規定要加這個參數, 否則無法識別 ES Module
         sourceType: 'module'
     });
 
